@@ -1,58 +1,54 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QCheckBox, QFormLayout
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QMessageBox
+from PyQt5.QtGui import QTextCursor, QColor, QTextCharFormat, QTextDocument
 
 
 class FindReplaceDialog(QDialog):
-    def __init__(self, text_edit, find_replace_model, parent=None):
-        super().__init__(parent)
+    def __init__(self, text_edit):
+        super().__init__()
+        self.text_edit = text_edit
         self.setWindowTitle("Find and Replace")
-        self.setFixedSize(400, 200)
+        self.setWindowModality(True)
 
-        layout = QVBoxLayout(self)
+        layout = QVBoxLayout()
 
-        find_label = QLabel("Find:")
+        self.find_label = QLabel("Find:")
         self.find_input = QLineEdit()
-        self.find_input.textChanged.connect(find_replace_model.set_find_text)
+        self.find_button = QPushButton("Find")
+        self.find_button.clicked.connect(self.find_text)
 
-        replace_label = QLabel("Replace:")
+        self.replace_label = QLabel("Replace:")
         self.replace_input = QLineEdit()
-        self.replace_input.textChanged.connect(find_replace_model.set_replace_text)
-
-        match_case_checkbox = QCheckBox("Match Case")
-        match_case_checkbox.stateChanged.connect(find_replace_model.set_match_case)
-
-        match_word_checkbox = QCheckBox("Match Whole Word")
-        match_word_checkbox.stateChanged.connect(find_replace_model.set_match_word)
-
-        search_backwards_checkbox = QCheckBox("Search Backwards")
-        search_backwards_checkbox.setChecked(find_replace_model.options.search_backwards)
-        search_backwards_checkbox.stateChanged.connect(
-            lambda state: find_replace_model.set_search_backwards(state == Qt.Checked))
-
-        find_button = QPushButton("Find")
-        find_button.clicked.connect(lambda: text_edit.find(find_replace_model.get_find_text()))
-
-        replace_button = QPushButton("Replace")
-        replace_button.clicked.connect(lambda: text_edit.replace(find_replace_model.get_find_text(), find_replace_model.get_replace_text()))
-
-        replace_all_button = QPushButton("Replace All")
-        replace_all_button.clicked.connect(lambda: text_edit.replace_all(find_replace_model.get_find_text(), find_replace_model.get_replace_text()))
+        self.replace_button = QPushButton("Replace")
+        self.replace_button.clicked.connect(self.replace_text)
 
         form_layout = QFormLayout()
-        form_layout.addRow(find_label, self.find_input)
-        form_layout.addRow(replace_label, self.replace_input)
-        form_layout.addRow(match_case_checkbox)
-        form_layout.addRow(match_word_checkbox)
-        form_layout.addRow(search_backwards_checkbox)
-        form_layout.addRow(find_button)
-        form_layout.addRow(replace_button)
-        form_layout.addRow(replace_all_button)
+        form_layout.addRow(self.find_label, self.find_input)
+        form_layout.addRow(self.find_button, None)
+        form_layout.addRow(self.replace_label, self.replace_input)
+        form_layout.addRow(self.replace_button, None)
 
         layout.addLayout(form_layout)
-
         self.setLayout(layout)
 
+    def find_text(self):
+        text = self.find_input.text()
+        if text:
+            cursor = self.text_edit.document().find(text)
 
-def find_replace_dialog(text_edit, find_replace_model):
-    dialog = FindReplaceDialog(text_edit, find_replace_model)
-    dialog.exec_()
+            if not cursor.isNull():
+                format_ = QTextCharFormat()
+                format_.setBackground(QColor("yellow"))  # Set the background color to red
+
+                while not cursor.isNull():
+                    cursor.mergeCharFormat(format_)
+                    cursor = self.text_edit.document().find(text, cursor)
+
+    def replace_text(self):
+        find_text = self.find_input.text()
+        replace_text = self.replace_input.text()
+        if find_text and replace_text:
+            self.text_edit.moveCursor(QTextCursor.Start)
+            while self.text_edit.find(find_text, QTextDocument.FindCaseSensitively):
+                self.text_edit.textCursor().insertText(replace_text)
+        else:
+            QMessageBox.warning(self, "Replace", "Please enter both find and replace text.")
