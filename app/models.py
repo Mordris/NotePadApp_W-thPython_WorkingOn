@@ -1,4 +1,3 @@
-# models.py
 from PyQt5.QtCore import QObject, pyqtSignal
 
 
@@ -9,8 +8,9 @@ class FindReplaceOptions(QObject):
         self.replace_text = ""
         self.match_case = False
         self.match_word = False
-        self.search_backwards = False  # Added flag
+        self.search_backwards = False
         self.replace_all = False
+        self.highlight_links = False  # Added flag
 
     def reset(self):
         self.find_text = ""
