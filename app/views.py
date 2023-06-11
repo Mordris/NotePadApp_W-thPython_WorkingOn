@@ -69,6 +69,7 @@ class NotepadApp(QMainWindow):
         file_path, _ = QFileDialog.getOpenFileName(self, "Open File", "", "Text Files (*.txt)")
         if file_path:
             with open(file_path, "r") as file:
+                self.text_edit.clear()  # Clear the existing text before setting the new contents
                 self.text_edit.setPlainText(file.read())
 
     def save_file(self):
