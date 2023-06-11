@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QMessageBox
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QFormLayout, QMessageBox, QApplication
 from PyQt5.QtGui import QTextCursor, QColor, QTextCharFormat, QTextDocument
-
+from PyQt5.QtCore import Qt, QTimer
 
 class FindReplaceDialog(QDialog):
     def __init__(self, text_edit):
@@ -37,11 +37,32 @@ class FindReplaceDialog(QDialog):
 
             if not cursor.isNull():
                 format_ = QTextCharFormat()
-                format_.setBackground(QColor("yellow"))  # Set the background color to red
+                format_.setBackground(QColor("yellow"))  # Set the background color to yellow
 
+                # Remove the previous yellow background color
+                old_format = QTextCharFormat()
+                old_format.setBackground(QColor(Qt.white))  # Set the background color to white
+
+                self.text_edit.clearFocus()  # Remove the text edit's focus to prevent highlighting during the search
+
+                # Remove the yellow background color from all occurrences
+                cursor.setPosition(0)
+                while cursor.movePosition(QTextCursor.NextCharacter, QTextCursor.KeepAnchor):
+                    cursor.mergeCharFormat(old_format)
+
+                # Find and highlight new occurrences
+                cursor = self.text_edit.document().find(text)
                 while not cursor.isNull():
+                    start = cursor.selectionStart()
+                    end = cursor.selectionEnd()
+
+                    # Apply the yellow background color to the current position
                     cursor.mergeCharFormat(format_)
                     cursor = self.text_edit.document().find(text, cursor)
+
+                self.text_edit.setFocus()  # Restore the focus to the text edit after the search
+            else:
+                self.show_error_message("Text not found.")
 
     def replace_text(self):
         find_text = self.find_input.text()
@@ -51,4 +72,21 @@ class FindReplaceDialog(QDialog):
             while self.text_edit.find(find_text, QTextDocument.FindCaseSensitively):
                 self.text_edit.textCursor().insertText(replace_text)
         else:
-            QMessageBox.warning(self, "Replace", "Please enter both find and replace text.")
+            self.show_error_message("Please enter both find and replace text.")
+
+    def show_error_message(self, message):
+        error_message_box = QMessageBox(self)
+        error_message_box.setIcon(QMessageBox.Warning)
+        error_message_box.setWindowTitle("Error")
+        error_message_box.setText(message)
+        error_message_box.setStandardButtons(QMessageBox.Ok)
+        error_message_box.setDefaultButton(QMessageBox.Ok)
+        error_message_box.setWindowModality(Qt.ApplicationModal)
+
+        # Set a timer to close the error message box after 2 seconds
+        timer = QTimer(self)
+        timer.setSingleShot(True)
+        timer.timeout.connect(error_message_box.close)
+        timer.start(2000)
+
+        error_message_box.exec_()
